@@ -39,12 +39,12 @@ Note: i will put this on pypy sometime soonish
 To install from source with pip:
 
 ```bash
-$ python -m pip install git+https://github.com/msemple1111/pytube
+$ python -m pip install git+https://github.com/mhruiz/pytube
 ```
 
 on windows, open cmd.exe and run:
 ```bash
-py -m pip install git+https://github.com/msemple1111/pytube
+py -m pip install git+https://github.com/mhruiz/pytube
 ```
 
 ## Description
