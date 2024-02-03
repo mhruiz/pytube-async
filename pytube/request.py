@@ -162,7 +162,8 @@ async def stream(
     url,
     session,
     timeout=900,
-    max_retries=0
+    max_retries=0,
+    request_max_retries=2
 ):
     """Read the response in chunks.
     :param str url: The URL to perform the GET request for.
@@ -170,6 +171,7 @@ async def stream(
     """
     file_size: int = default_range_size  # fake filesize to start
     downloaded = 0
+    request_retries = 0
     while downloaded < file_size:
         stop_pos = min(downloaded + default_range_size, file_size) - 1
         range_header = f"bytes={downloaded}-{stop_pos}"
@@ -202,12 +204,27 @@ async def stream(
                 break
             tries += 1
 
+        if response.status == 403:
+            # Retry the request if it returns a 403 status code
+            logger.warning("Received 403 Forbidden. Retrying...")
+            downloaded = 0
+            request_retries += 1
+            if request_retries >= request_max_retries:
+                raise MaxRetriesExceeded()
+            continue
+
         if file_size == default_range_size:
             try:
                 content_range = response.headers["Content-Range"]
                 file_size = int(content_range.split("/")[1])
             except (KeyError, IndexError, ValueError) as e:
                 logger.error(e)
+                logger.warning("Retrying...")
+                downloaded = 0
+                request_retries += 1
+                if request_retries >= request_max_retries:
+                    raise MaxRetriesExceeded()
+                continue
         while True:
             chunk = await response.content.read(default_chunk_size)
             if not chunk:
